@@ -1,0 +1,6 @@
+/* In your CSS/SCSS file, e.g., assets/css/main.scss or _sass/_custom.scss */
+.center-image {
+  display: block; /* Makes the image a block-level element */
+  margin-left: auto; /* Centers the block-level element horizontally */
+  margin-right: auto;
+}

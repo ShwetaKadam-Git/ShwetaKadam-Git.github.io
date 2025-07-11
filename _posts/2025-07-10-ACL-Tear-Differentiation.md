@@ -1,0 +1,295 @@
+---
+title: "Differentiating ACL Tear Types on MRI with Deep Learning"
+author: Yang Xue, Shu Yang, Wenjie Sun, Hui Tan, Kaibin Lin, Li Peng, Zheng Wang, Jianglin Zhang
+date: 2024-07-10
+permalink: /posts/ACL-DNet/
+tags:
+    - deep learning
+    - medical imaging
+    - ACL
+    - radiomics
+    - AI in medicine
+
+---
+Based on the research article: "Approaching expert-level accuracy for differentiating ACL tear types on MRI with deep learning" by Yang Xue et al., Scientific Reports, 2024
+
+## Introduction
+Anterior cruciate ligament (ACL) injuries are among the most common and devastating sports-related injuries, often requiring precise diagnosis and tailored surgical intervention. While MRI is the gold standard for noninvasive ACL assessment, accurately determining the type and location of a tear is a nuanced task that even experienced radiologists can find challenging. The stakes are high: surgical planning, patient outcomes, and the potential for ligament preservation all depend on getting this classification right.
+
+  <img src="/images/ACL.jpg" alt="ACL" title="ACL" class="center-image">
+
+This blog post explores a landmark study that leverages deep learning and radiomics to automate and refine ACL tear typing on MRI, achieving performance on par with seasoned clinical experts. We’ll walk through the clinical context, the technical innovations, and the implications for the future of orthopedic imaging.
+
+----
+
+## The Clinical Challenge: Why ACL Tear Typing Matters
+
+The ACL is a critical stabilizer of the knee. Its injuries can range from subtle sprains to complete ruptures. However, not all tears are the same. The pattern and location of the tear—whether it’s a clean avulsion near the femoral origin or a ragged mid-substance rupture—directly influence surgical decisions:
+
+**- Primary repair** is feasible for certain tear types, especially those with substantial ligament remnant. 
+
+**- Complex reconstruction** may be required for others, particularly mid-substance or distal tears. 
+
+**- Remnant preservation** and advanced biological techniques hinge on knowing the tear’s exact characteristics before surgery.
+
+Traditionally, MRI-based classification is subjective and can vary with the radiologist’s experience. The modified Sherman classification, which sorts tears by the length of the distal ligament remnant, is widely used but not foolproof. Misclassification can lead to suboptimal treatment, unnecessary reconstructions, or missed opportunities for minimally invasive repair.
+
+----
+
+## The Modified Sherman Classification: A Surgical Roadmap
+
+The **modified Sherman classification** is a five-type system based on the remaining length of the distal ACL remnant:
+
+
+| Type   | Description                 | Distal Remnant Length | Clinical Implication                |
+|--------|-----------------------------|-----------------------|-------------------------------------|
+| 1      | Proximal avulsion           | >90%                  | Often repairable, preserve remnant  |
+| 2      | Proximal tear               | 75–90%                | May be repairable                   |
+| 3      | Mid-substance tear          | 25–75%                | Usually requires reconstruction     |
+| 4      | Distal tear                 | 10–25%                | Rare, challenging                   |
+| 5      | Distal avulsion             | <10%                  | Rare, often not repairable          |
+
+----
+This classification is more than academic—it’s a practical guide for surgeons, influencing whether they attempt repair, opt for reconstruction, or employ advanced techniques like remnant preservation or biological scaffolding.
+
+<img src="/images/ACL_Rupture_Sherman.jpg" alt="Tear Types Illustration" title="Tear Types Illustration" class="center-image">
+---
+
+## The Vision: Can AI Match Human Experts?
+
+Deep learning (DL) has revolutionized image analysis, but most prior work in musculoskeletal imaging focused on binary classification (tear/no tear) or simple abnormality detection. The challenge here is subtler: **can a machine learn to distinguish between nuanced tear types, using not just raw images but also the kinds of tissue texture and shape cues that skilled radiologists use?**
+This is the story of how a team built an automated pipeline that does this after combining:
+
+- **ACL-DNet:** A U-Net-based segmentation network to isolate the ligament.
+- **ACL-SNet:** A hybrid classifier fusing image features, radiomics, and clinical data (age, sex).
+
+---
+
+# Study Design: Building a Real-World Dataset
+
+## Patient Cohort
+The study retrospectively reviewed 862 patients from Hunan Provincial People’s Hospital, all of whom underwent preoperative MRI and had their ACL status confirmed by arthroscopy. The cohort included both men and women (ages 18–78, mean 36.8 years), providing a representative sample of real-world ACL injuries.
+
+**Flowchart of patient inclusion/exclusion**
+
+---
+<img src="/images/DataSplit.jpg" alt="Flowchart of patient inclusion/exclusion and Datasplit" title="Flowchart of patient inclusion/exclusion and Datasplit" class="center-image">
+---
+
+## Imaging Protocol
+All patients were scanned using a 3.0 T MRI with an 8-channel knee coil, employing a sagittal proton density-weighted spectral attenuated inversion recovery (PDW-SPAIR) sequence. This high-resolution imaging setup ensured that subtle differences in ligament structure and tear morphology could be captured.
+
+## Inclusion and Exclusion Criteria
+ **- Included**: Patients with confirmed ACL status via arthroscopy.
+
+**- Excluded**: Patients under 18, those with chronic/partial/multi-ligament tears, tumors, bone fractures, or metabolic/knee diseases affecting ACL quality.
+
+## Data Split
+The dataset was divided into a development set (772 patients for training/validation) and a holdout test set (90 patients). The distribution of ACL statuses was as follows:
+
+
+| ACL Status      | Number of Patients |
+|-----------------|-------------------|
+| Intact          | 324               |
+| Type 1          | 86                |
+| Type 2          | 113               |
+| Type 3          | 204               |
+| Type 4          | 54                |
+| Type 5          | 81                |
+
+This comprehensive dataset allowed the researchers to train and rigorously test their automated pipeline.
+
+---
+
+##  The Automated Pipeline: From MRI to Tear Typing
+
+**Step 1. Preprocessing**
+
+All MRI images underwent normalization and standardization to ensure consistency. Data augmentation (random clipping, flipping, shifting, tilting, scaling) was employed to enhance the model’s robustness and generalizability. Regularization techniques (dropout, weight decay, early stopping) helped prevent overfitting.
+
+**Step 2. Automated Segmentation (ACL-DNet)**
+
+The first technical hurdle is isolating the ACL from the complex anatomy of the knee. The researchers developed ACL-DNet, a U-Net-based convolutional neural network (CNN) specifically trained for this task. The network was supervised using manually annotated masks, learning to accurately delineate the ACL from surrounding tissues.
+
+**Performance**: ACL-DNet achieved a Dice coefficient of 0.98 ± 0.06 on the test set, outperforming established segmentation models like PSPNet and SegNet.
+
+ **Ground truth vs Segmentation results**
+
+---
+<img src="/images/Segmentation_Groundtruth.jpg" alt="Segmentation results vs Ground truth" title="Segmentation results vs Ground truth" class="center-image">
+
+**Figure** - This illustrates ACL tissue segmentation on grayscale images. Each panel (a-d) presents an original image and its ACL segmentation for different patients: (a) a 19-year-old male with an intact ACL, (b) an 18-year-old male with a Type 2 ACL tear, (c) a 46-year-old female with a Type 4 ACL tear, and (d) a 37-year-old female with a Type 5 ACL tear. Red outlines the ground truth segmentation, and blue shows the ACL-DNet prediction.
+
+---
+
+**Step 3. Radiomics Feature Extraction**
+
+With the ACL segmented, the next step is to extract quantitative features that capture subtle differences in ligament shape, texture, and intensity—features that expert radiologists use, often subconsciously, in their assessments.
+
+**Tool**: PyRadiomics, an open-source Python package, was used to extract 21 initial features (e.g., 2D shape, gray-level co-occurrence matrix [GLCM] texture).
+
+**Feature Selection**: Through unsupervised clustering, Spearman correlation, univariate analysis, and random forest ranking, the feature set was distilled to the most discriminative metrics—primarily 2D shape and GLCM texture features.
+
+
+**Representations of radiomic features**
+
+---
+<img src="/images/RadiomicFeatures.jpg" alt=" Representations of radiomic features" title=" Representations of radiomic features" class="center-image">
+
+**Figure**: Representations of radiomic features. (a) Unsupervised clustering of participants on the x-axis and 
+radiomics feature expression on the y-axis reveals that clustered patients have similar radiomics expression 
+patterns. (b) An example showing no correspondence with radiomics expression patterns. (c) Correlation 
+coefficient matrix between radiomics variables. (d) Ranks and scores identifying important radiomics features.
+
+---
+
+
+**Step 4. Classification (ACL-SNet)**
+
+The final stage is classification. Here, the researchers designed ACL-SNet, a hybrid deep learning model that fuses three streams of information:
+
+**Image features**: Extracted from a pretrained VGG16 network, capturing both global and local visual patterns.
+
+**Radiomics features**: Six selected shape and texture metrics.
+
+**Clinical data**: Age and sex, providing essential context.
+
+These features are concatenated and passed through dense layers with dropout, culminating in a softmax output that predicts one of six possible ACL statuses (intact or one of the five tear types).
+
+**Schematic of the full pipeline**
+
+---
+<img src="/images/DLSystem_Overview.jpg" alt=" Schematic of the full pipeline" title=" Schematic of the full pipeline" class="center-image">
+
+**Figure:** This image provides an overview of the deep learning system. (a) The proposed deep learning network architecture differentiates ACL status using clinical, signal, and radiomics features. (b) ACL-DNet, a U-Net architecture, is used for ACL signal detection. (c) Quantitative features are calculated and stored for each ligament to provide a rich tissue description, which are then thresholded and probabilistically fused for differential diagnosis. (d) ACL-SNet illustrates a hybrid approach, combining image features from pre-trained weights with numeric inputs to recognize ACL status.
+
+---
+
+
+## Training, Validation, and Testing
+
+- **Hardware:** Dell XPS 8930, NVIDIA GTX 2080, 16GB RAM
+- **Framework:** Keras (TensorFlow backend)
+- **Segmentation:** 30 epochs, compared to PSPNet and SegNet
+- **Classification:** 46 epochs, with cross-validation and hyperparameter tuning
+
+---
+
+## How Well Does the System Work?
+
+###  Segmentation Performance
+ACL-DNet outperformed other segmentation models, achieving near-perfect sensitivity, specificity, and Dice coefficient:
+
+| Model      | Sensitivity | Specificity | Dice Coefficient |
+|------------|-------------|-------------|------------------|
+| PSPNet     | 0.90        | 0.92        | 0.93             |
+| SegNet     | 0.84        | 0.86        | 0.88             |
+| **ACL-DNet**   | **0.97**        | **0.97**        | **0.98**             |
+
+---- 
+
+###  Classification Performance
+
+The hybrid ACL-SNet model demonstrated remarkable accuracy, outperforming models using only image, radiomics, or clinical data:
+
+| Method                | Accuracy (%) | AUC (95% CI)      |
+|-----------------------|-------------|-------------------|
+| Conventional VGG16     | 89.3        | 91 (84–96)        |
+| Radiomics Classifier       | 75.3        | 77 (70–83)        |
+| Predictor (Age and Sex)    | 68.1        | 74 (63–85)        |
+| **ACL-SNet** | **98.8**    | **99 (95–99)**    |
+
+- **Test set:** On the test set, the model correctly classified 88 out of 90 patients (97% accuracy), with high confidence in its predictions.
+- **Model confidence:** 97% for correct, 3% for incorrect
+
+----
+
+
+###  Human vs. DL Approach Results
+
+To truly benchmark performance, the system’s predictions were compared against those of three clinical experts:
+
+- **Senior Radiologist:** AUC 0.96 (94% accuracy)
+- **Junior Radiologist:** AUC 0.92 (74–83% accuracy)
+- **Orthopedist Resident:** AUC 0.88
+- **Statistical analysis:** Statistical analysis revealed no significant difference between ACL-SNet and the senior radiologist, but the DL system was significantly more accurate than less experienced clinicians.
+
+**ROC curves comparing ACL-SNet and clinical experts**
+
+---
+
+<img src="/images/ROC_curve.jpg" alt="ROC curves comparing ACL-SNet and clinical experts" title="ROC curves comparing ACL-SNet and clinical experts" class="center-image">
+
+ Blue False Positive Rate ACL-SNet Expert Radiologists
+
+**Figure:** Receiver operating characteristic (ROC) curves for the ACL-SNet system and the clinical experts 
+
+---
+
+###  Error Analysis: Where Do Mistakes Happen?
+Confusion matrices revealed that the deep learning model occasionally confused Type 2 and Type 5 tears, while human experts made different types of errors. Notably, the system’s confidence was much lower in cases where it made incorrect predictions, suggesting that its probability outputs could be used to flag uncertain cases for human review.
+
+- **Confusion Matrices:**  
+  - DL: Occasional confusion between Type 2 and Type 5
+  - Junior radiologist: Type 2 vs. 3
+  - Orthopedist: Intact vs. Type 1
+  - Senior radiologist: Type 4 vs. 5
+
+---
+
+<img src="/images/Confusion_Matrix.jpg" alt="Confusion matrix for AI and experts" title="Confusion matrix for AI and experts" class="center-image">
+
+**Figure:** - Confusion matrix
+
+---
+
+##  Why Does This Work?
+
+###  The Power of Multimodal Fusion 
+The study’s success lies in its multimodal fusion combining image features, radiomics, and clinical data:
+
+- **Image features** capture global and local patterns, but may miss subtle textural cues.
+- **Radiomics** quantifies shape and texture, mimicking what expert radiologists look for.
+- **Clinical data** (age, sex) adds context, reflecting real-world diagnostic reasoning.
+
+Random forest analysis highlighted which radiomics features were most discriminative, while visualization techniques (e.g., heatmaps, cluster analyses) showed that different tear types cluster distinctly in the feature space.
+
+---
+
+## Clinical Implications: From Bench to Bedside
+
+- **Preoperative Planning:**  
+  Surgeons can tailor their approach—repair, reconstruct, or preserve—based on accurate, reproducible MRI typing.
+- **Scalability:**  
+  Automated pipeline can be deployed in busy hospitals, reducing diagnostic bottlenecks and variability.
+- **Training Tool:**  
+  Can serve as a second reader or training aid for junior radiologists and orthopedic residents.
+
+---
+
+## Limitations and Next Steps
+
+While the pipeline is highly accurate, it is not fully end-to-end; segmentation and classification are separate modules. The study relied exclusively on conventional MRI, omitting advanced imaging techniques like 3D or diffusion-weighted sequences. Some rare tear types were underrepresented in the dataset, potentially limiting the model’s generalizability.
+
+- **Two-stage pipeline:** Not fully end-to-end, but modularity aids troubleshooting and future upgrades.
+- **Conventional MRI only:** Advanced imaging (e.g., 3D sequences) not included.
+- **Rare tear types:** Some patterns underrepresented in the dataset.
+- **Future work:**  
+  - Incorporate synthetic data and transfer learning  
+  - Validate on multicenter, multi-scanner datasets  
+  - Expand to other joint injuries
+
+---
+
+## Conclusion: Toward Reliable, Automated ACL Tear Typing
+
+This research demonstrates that a hybrid deep learning and radiomics approach can achieve expert-level accuracy in differentiating ACL tear types on MRI. The fully automated pipeline promises to improve diagnostic consistency, support surgical decision-making, and broaden access to high-quality musculoskeletal imaging analysis.
+
+---
+
+## References
+
+- Yang Xue et al., "Approaching expert-level accuracy for differentiating ACL tear types on MRI with deep learning," Scientific Reports, 2024.  
+- [PyRadiomics documentation](https://pyradiomics.readthedocs.io/en/latest/)
+
+---
