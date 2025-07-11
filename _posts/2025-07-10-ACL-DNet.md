@@ -1,7 +1,7 @@
 ---
 title: "Differentiating ACL Tear Types on MRI with Deep Learning"
 author: Yang Xue, Shu Yang, Wenjie Sun, Hui Tan, Kaibin Lin, Li Peng, Zheng Wang, Jianglin Zhang
-date: 2024-07-10
+date: 2025-07-10
 permalink: /posts/ACL-DNet/
 tags:
     - deep learning
